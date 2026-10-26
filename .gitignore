@@ -1,0 +1,36 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+.venv*/
+.cache/
+upstream/
+outputs/
+
+# Credentials, local editor state, and large/generated artifacts.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+.DS_Store
+.idea/
+.vscode/
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+*.bin
+*.h5
+*.hdf5
+*.zarr/
+*.partial
+*.zip
+*.tar
+*.tar.gz
+tmp/
+
+# Machine-only historical disk handoff; keep locally, not in the code archive.
+/docs/handoff/2026-10-24_0558_external_disk_handoff.md

@@ -1,0 +1,24 @@
+{
+  "external": {
+    "mountpoint": "/media/pan/Expansion1",
+    "root": "/media/pan/Expansion1/dp_week1",
+    "uuid": "b8104161-e073-d644-a4b9-f4efbcfc1463",
+    "fstype": "ext4",
+    "observed_source": "/dev/sda3",
+    "disk_model": "Expansion HDD",
+    "disk_serial": "00000000NT1FVEEZ"
+  },
+  "floors_gib": {
+    "local": 15,
+    "external": 10,
+    "available_ram": 2
+  },
+  "cgroup_limits": {
+    "memory_gib": 8,
+    "swap_gib": 0.5,
+    "cpu_quota": 4
+  },
+  "default_timeout_seconds": 1800,
+  "maximum_timeout_seconds": 7200,
+  "monitor_interval_seconds": 2
+}

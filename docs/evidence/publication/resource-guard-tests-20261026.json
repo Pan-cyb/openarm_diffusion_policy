@@ -1,0 +1,136 @@
+{
+  "after": {
+    "available_ram_bytes": 8947191808,
+    "cgroup": {
+      "cpu_stat": {
+        "core_sched.force_idle_usec": 0,
+        "system_usec": 121236,
+        "usage_usec": 513765,
+        "user_usec": 392529
+      },
+      "memory_current": 18333696,
+      "memory_peak": 51679232,
+      "memory_swap_current": 0,
+      "memory_swap_peak": 0,
+      "pids_current": 1,
+      "pids_peak": 5
+    },
+    "external_free_bytes": 2050026958848,
+    "local_free_bytes": 27758608384,
+    "mount": {
+      "fstype": "ext4",
+      "parent_disk": {
+        "model": "Expansion HDD",
+        "path": "/dev/sda",
+        "pkname": "",
+        "serial": "00000000NT1FVEEZ",
+        "type": "disk"
+      },
+      "source": "/dev/sda3",
+      "target": "/media/pan/Expansion1",
+      "uuid": "b8104161-e073-d644-a4b9-f4efbcfc1463"
+    },
+    "time_unix": 1793000012.8940403
+  },
+  "before": {
+    "available_ram_bytes": 8936116224,
+    "cgroup": {
+      "cpu_stat": {
+        "core_sched.force_idle_usec": 0,
+        "system_usec": 21295,
+        "usage_usec": 51717,
+        "user_usec": 30421
+      },
+      "memory_current": 8757248,
+      "memory_peak": 9089024,
+      "memory_swap_current": 0,
+      "memory_swap_peak": 0,
+      "pids_current": 1,
+      "pids_peak": 2
+    },
+    "external_free_bytes": 2050026958848,
+    "local_free_bytes": 27758850048,
+    "mount": {
+      "fstype": "ext4",
+      "parent_disk": {
+        "model": "Expansion HDD",
+        "path": "/dev/sda",
+        "pkname": "",
+        "serial": "00000000NT1FVEEZ",
+        "type": "disk"
+      },
+      "source": "/dev/sda3",
+      "target": "/media/pan/Expansion1",
+      "uuid": "b8104161-e073-d644-a4b9-f4efbcfc1463"
+    },
+    "time_unix": 1793000012.2823563
+  },
+  "budgets_bytes": {
+    "external": 107374183,
+    "local": 268435456
+  },
+  "cgroup_after": {
+    "cpu_stat": {
+      "core_sched.force_idle_usec": 0,
+      "system_usec": 118256,
+      "usage_usec": 507809,
+      "user_usec": 389552
+    },
+    "memory_current": 18001920,
+    "memory_peak": 51679232,
+    "memory_swap_current": 0,
+    "memory_swap_peak": 0,
+    "pids_current": 1,
+    "pids_peak": 5
+  },
+  "cgroup_limits": {
+    "affinity_cpus": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "memory_max_bytes": 8589934592,
+    "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/dp-week1-1000-1793000012-55681.service",
+    "quota_controller_available": false,
+    "swap_max_bytes": 536870912
+  },
+  "command": [
+    ".venv-dp/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests",
+    "--junitxml",
+    "outputs/publication-tests-20261026.xml"
+  ],
+  "command_exit_code": 0,
+  "elapsed_seconds": 0.6105470657348633,
+  "finished_at_unix": 1793000012.8884215,
+  "floors_bytes": {
+    "available_ram": 2147483648,
+    "external": 10737418240,
+    "local": 16106127360
+  },
+  "mount_before": {
+    "fstype": "ext4",
+    "parent_disk": {
+      "model": "Expansion HDD",
+      "path": "/dev/sda",
+      "pkname": "",
+      "serial": "00000000NT1FVEEZ",
+      "type": "disk"
+    },
+    "source": "/dev/sda3",
+    "target": "/media/pan/Expansion1",
+    "uuid": "b8104161-e073-d644-a4b9-f4efbcfc1463"
+  },
+  "project_root": "/home/pan/openarm_diffusion_policy",
+  "sampled_memory_peak_bytes": 10903552,
+  "schema_version": 1,
+  "started_at_unix": 1793000012.2778747,
+  "status": "completed",
+  "stop_reason": null,
+  "storage_root": "/media/pan/Expansion1/dp_week1",
+  "timeout_seconds": 600
+}

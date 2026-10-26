@@ -1,0 +1,178 @@
+{
+  "checkpoint": {
+    "path": "/media/pan/Expansion/dp_week1/checkpoints/epoch=0500-test_mean_score=0.884.ckpt",
+    "sha256": "bac7221f7e34cd51162dc1972e1a39ffcddc87de1dc1780c44ffa61b88c4ff76",
+    "sha256_provenance": "computed_locally_not_publisher_signed",
+    "size": 4293295813,
+    "source_url": "https://diffusion-policy.cs.columbia.edu/data/experiments/image/pusht/diffusion_policy_cnn/train_0/checkpoints/epoch%3D0500-test_mean_score%3D0.884.ckpt"
+  },
+  "deviations_from_published_config": {
+    "algorithm_monkeypatches": [],
+    "checkpoint_loading": "map_location=cpu; retain cfg and EMA state only; instantiate the original cfg.policy after releasing other payload state",
+    "max_steps": 300,
+    "n_envs": 1,
+    "n_test": 3,
+    "n_test_vis": 3,
+    "n_test_vis_minimum": 1,
+    "n_train": 0,
+    "published_test_start_seed_reserved": 100000,
+    "test_start_seed": 10003
+  },
+  "device": "cuda:0",
+  "effective_config_path": "/media/pan/Expansion/dp_week1/outputs/dp-official-extra-20261024-011500/config.effective_eval.yaml",
+  "memory": {
+    "cuda_device": "NVIDIA GeForce RTX 3060 Laptop GPU",
+    "cuda_peak_allocated_bytes": 1177771008,
+    "cuda_peak_reserved_bytes": 1329594368,
+    "host_max_rss_kib": 5779340
+  },
+  "original_metrics": {
+    "test/mean_score": 0.9035181092693877,
+    "test/sim_max_reward_10003": 0.7105543278081632,
+    "test/sim_max_reward_10004": 1.0,
+    "test/sim_max_reward_10005": 1.0,
+    "test/sim_video_10003": "/media/pan/Expansion/dp_week1/outputs/dp-official-extra-20261024-011500/media/scionrs8.mp4",
+    "test/sim_video_10004": "/media/pan/Expansion/dp_week1/outputs/dp-official-extra-20261024-011500/media/9du6rtbj.mp4",
+    "test/sim_video_10005": "/media/pan/Expansion/dp_week1/outputs/dp-official-extra-20261024-011500/media/aneglm8f.mp4"
+  },
+  "original_metrics_path": "/media/pan/Expansion/dp_week1/outputs/dp-official-extra-20261024-011500/eval_log.json",
+  "per_seed_results": [
+    {
+      "max_reward_score": 0.7105543278081632,
+      "seed": 10003,
+      "video_path": "/media/pan/Expansion/dp_week1/outputs/dp-official-extra-20261024-011500/media/scionrs8.mp4",
+      "video_validation": {
+        "average_fps": 10.0,
+        "codec": "h264",
+        "decoded_duration_seconds": 30.0,
+        "decoded_frame_count": 300,
+        "episode_note": "The original environment may terminate before the 300-step cap on task success.",
+        "nonempty_media": true,
+        "path": "/media/pan/Expansion/dp_week1/outputs/dp-official-extra-20261024-011500/media/scionrs8.mp4",
+        "seed": 10003,
+        "size_bytes": 41496
+      }
+    },
+    {
+      "max_reward_score": 1.0,
+      "seed": 10004,
+      "video_path": "/media/pan/Expansion/dp_week1/outputs/dp-official-extra-20261024-011500/media/9du6rtbj.mp4",
+      "video_validation": {
+        "average_fps": 10.0,
+        "codec": "h264",
+        "decoded_duration_seconds": 19.9,
+        "decoded_frame_count": 199,
+        "episode_note": "The original environment may terminate before the 300-step cap on task success.",
+        "nonempty_media": true,
+        "path": "/media/pan/Expansion/dp_week1/outputs/dp-official-extra-20261024-011500/media/9du6rtbj.mp4",
+        "seed": 10004,
+        "size_bytes": 31686
+      }
+    },
+    {
+      "max_reward_score": 1.0,
+      "seed": 10005,
+      "video_path": "/media/pan/Expansion/dp_week1/outputs/dp-official-extra-20261024-011500/media/aneglm8f.mp4",
+      "video_validation": {
+        "average_fps": 10.0,
+        "codec": "h264",
+        "decoded_duration_seconds": 23.5,
+        "decoded_frame_count": 235,
+        "episode_note": "The original environment may terminate before the 300-step cap on task success.",
+        "nonempty_media": true,
+        "path": "/media/pan/Expansion/dp_week1/outputs/dp-official-extra-20261024-011500/media/aneglm8f.mp4",
+        "seed": 10005,
+        "size_bytes": 34738
+      }
+    }
+  ],
+  "resource_controls": {
+    "cuda_memory_fraction": 0.65,
+    "torch_num_threads": 2
+  },
+  "rng": {
+    "numpy": 42,
+    "python_random": 42,
+    "torch": 42
+  },
+  "runtime": {
+    "cuda_available": true,
+    "diffusers": "0.11.1",
+    "dill": "0.3.5.1",
+    "gym": "0.21.0",
+    "hydra_core": "1.3.2",
+    "omegaconf": "2.3.1",
+    "python": "3.10.12",
+    "robomimic": "0.2.0",
+    "torch": "1.12.1+cu116",
+    "torch_cuda": "11.6",
+    "wandb": "0.13.3"
+  },
+  "schema_version": 1,
+  "scope": {
+    "execution_path": "resource-adapted official pretrained evaluation; not the unchanged upstream eval.py workspace path",
+    "metric_interpretation": "PushTImageRunner max-reward score; a numeric score is not automatically a binary success rate.",
+    "original_policy_architecture_and_runner": true,
+    "paper_benchmark_reproduction": false,
+    "phase": "Week 1 development evaluation",
+    "task": "official image Push-T pretrained checkpoint",
+    "training_data_used": false,
+    "training_performed": false
+  },
+  "timing": {
+    "checkpoint_load_seconds": 109.66117532800126,
+    "policy_construct_load_seconds": 2.229096686001867,
+    "rollout_seconds": 189.1316879809965,
+    "total_wall_seconds": 407.69084211200243
+  },
+  "upstream": {
+    "after": {
+      "commit": "5ba07ac6661db573af695b419a7947ecb704690f",
+      "origin": "https://github.com/real-stanford/diffusion_policy.git",
+      "path": "/home/pan/openarm_diffusion_policy/upstream/diffusion_policy",
+      "status": "clean"
+    },
+    "before": {
+      "commit": "5ba07ac6661db573af695b419a7947ecb704690f",
+      "origin": "https://github.com/real-stanford/diffusion_policy.git",
+      "path": "/home/pan/openarm_diffusion_policy/upstream/diffusion_policy",
+      "status": "clean"
+    },
+    "verified_clean_before_and_after": true
+  },
+  "video_validation": [
+    {
+      "average_fps": 10.0,
+      "codec": "h264",
+      "decoded_duration_seconds": 30.0,
+      "decoded_frame_count": 300,
+      "episode_note": "The original environment may terminate before the 300-step cap on task success.",
+      "nonempty_media": true,
+      "path": "/media/pan/Expansion/dp_week1/outputs/dp-official-extra-20261024-011500/media/scionrs8.mp4",
+      "seed": 10003,
+      "size_bytes": 41496
+    },
+    {
+      "average_fps": 10.0,
+      "codec": "h264",
+      "decoded_duration_seconds": 19.9,
+      "decoded_frame_count": 199,
+      "episode_note": "The original environment may terminate before the 300-step cap on task success.",
+      "nonempty_media": true,
+      "path": "/media/pan/Expansion/dp_week1/outputs/dp-official-extra-20261024-011500/media/9du6rtbj.mp4",
+      "seed": 10004,
+      "size_bytes": 31686
+    },
+    {
+      "average_fps": 10.0,
+      "codec": "h264",
+      "decoded_duration_seconds": 23.5,
+      "decoded_frame_count": 235,
+      "episode_note": "The original environment may terminate before the 300-step cap on task success.",
+      "nonempty_media": true,
+      "path": "/media/pan/Expansion/dp_week1/outputs/dp-official-extra-20261024-011500/media/aneglm8f.mp4",
+      "seed": 10005,
+      "size_bytes": 34738
+    }
+  ]
+}

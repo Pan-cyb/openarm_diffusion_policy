@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "scope": "Standalone Diffusion Policy Week1 image Push-T and OpenArm MuJoCo bootstrap",
+  "sources": {
+    "diffusion_policy": {
+      "repository": "https://github.com/real-stanford/diffusion_policy.git",
+      "commit": "5ba07ac6661db573af695b419a7947ecb704690f",
+      "destination": "upstream/diffusion_policy",
+      "allow_worktree_patch": null
+    },
+    "openarm_mujoco": {
+      "repository": "https://github.com/enactic/openarm_mujoco.git",
+      "commit": "a3c8a57ec15d385e3c1dbd3fd090ee486b7f258c",
+      "destination": "upstream/openarm_mujoco",
+      "allow_worktree_patch": null
+    },
+    "gym": {
+      "repository": "https://github.com/openai/gym.git",
+      "tag": "v0.21.0",
+      "commit": "c755d5c35a25ab118746e2ba885894ff66fb8c43",
+      "destination": "upstream/gym",
+      "allow_worktree_patch": "patches/gym-0.21-metadata.patch"
+    }
+  },
+  "artifacts": {
+    "torch_cp310_cu116": {
+      "url": "https://download.pytorch.org/whl/cu116/torch-1.12.1%2Bcu116-cp310-cp310-linux_x86_64.whl",
+      "size_bytes": 1904768549
+    },
+    "torchvision_cp310_cu116": {
+      "url": "https://download.pytorch.org/whl/cu116/torchvision-0.13.1%2Bcu116-cp310-cp310-linux_x86_64.whl",
+      "size_bytes": 23491556
+    }
+  },
+  "dependency_deviations": {
+    "av": {
+      "upstream_version": "10.0.0",
+      "selected_version": "12.3.0",
+      "reason": "The official av 10.0.0 release has no CPython 3.10 Linux wheel; this is a dependency-only compatibility deviation."
+    },
+    "protobuf": {
+      "candidate_version": "3.20.3",
+      "selected_version": "3.19.6",
+      "reason": "tensorboard 2.10.1 requires protobuf<3.20 and tensorboardX 2.5.1 requires protobuf<=3.20.1; 3.19.6 also satisfies wandb 0.13.3."
+    }
+  }
+}
