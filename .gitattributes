@@ -1,0 +1,2 @@
+# Preserve generated Wavefront assets byte-for-byte without whitespace checks.
+openarm_v2/vendor/**/*.obj -whitespace

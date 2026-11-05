@@ -1,9 +1,0 @@
-{
-  "test/mean_score": 0.9035181092693877,
-  "test/sim_max_reward_10003": 0.7105543278081632,
-  "test/sim_max_reward_10004": 1.0,
-  "test/sim_max_reward_10005": 1.0,
-  "test/sim_video_10003": "/media/pan/Expansion/dp_week1/outputs/dp-official-extra-20261024-011500/media/scionrs8.mp4",
-  "test/sim_video_10004": "/media/pan/Expansion/dp_week1/outputs/dp-official-extra-20261024-011500/media/9du6rtbj.mp4",
-  "test/sim_video_10005": "/media/pan/Expansion/dp_week1/outputs/dp-official-extra-20261024-011500/media/aneglm8f.mp4"
-}

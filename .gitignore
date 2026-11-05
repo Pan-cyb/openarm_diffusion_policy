@@ -1,13 +1,17 @@
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.coverage
-.venv*/
+.venv-dp/
 .cache/
-upstream/
-outputs/
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.coverage
+**/outputs/
+**/*.py[cod]
+**/*.mjb
 
-# Credentials, local editor state, and large/generated artifacts.
+# Local upstream source checkouts are reproducible dependencies.
+openarm_v2/upstream/
+
+# Credentials, editor state, and large model artifacts.
 .env
 .env.*
 !.env.example
@@ -15,9 +19,6 @@ outputs/
 *.key
 *.p12
 *.pfx
-.DS_Store
-.idea/
-.vscode/
 *.ckpt
 *.pt
 *.pth
@@ -27,10 +28,7 @@ outputs/
 *.hdf5
 *.zarr/
 *.partial
-*.zip
-*.tar
-*.tar.gz
+.DS_Store
+.idea/
+.vscode/
 tmp/
-
-# Machine-only historical disk handoff; keep locally, not in the code archive.
-/docs/handoff/2026-10-24_0558_external_disk_handoff.md

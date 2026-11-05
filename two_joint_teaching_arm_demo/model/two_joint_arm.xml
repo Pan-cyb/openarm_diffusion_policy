@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mujoco model="two_joint_teaching_arm">
+  <compiler angle="radian" autolimits="true" balanceinertia="true"/>
+  <option timestep="0.001" integrator="implicitfast" gravity="0 0 -9.81"/>
+  <visual>
+    <global offwidth="720" offheight="540"/>
+  </visual>
+
+  <default>
+    <geom condim="3" friction="0.8 0.01 0.001"/>
+    <default class="dm4310">
+      <!-- Parameters copied from OpenArm v1's DM4310 simulation class. -->
+      <joint type="hinge" limited="true" damping="0.9"
+             frictionloss="0.1" armature="0.002"/>
+      <position ctrllimited="true" forcelimited="true"
+                forcerange="-7 7" kp="30" kv="1.5"/>
+    </default>
+  </default>
+
+  <asset>
+    <texture type="skybox" builtin="gradient"
+             rgb1="0.18 0.28 0.40" rgb2="0.02 0.03 0.05"
+             width="512" height="3072"/>
+    <texture type="2d" name="floor_tex" builtin="checker"
+             rgb1="0.14 0.17 0.20" rgb2="0.05 0.06 0.07"
+             width="256" height="256"/>
+    <material name="floor_mat" texture="floor_tex"
+              texrepeat="6 6" texuniform="true" reflectance="0.15"/>
+    <material name="link_dark" rgba="0.12 0.15 0.18 1"/>
+    <material name="link_light" rgba="0.68 0.74 0.78 1"/>
+    <material name="motor" rgba="0.08 0.09 0.10 1"/>
+    <material name="handle" rgba="0.95 0.55 0.12 1"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 -1.2 1.8" dir="0 0.4 -1" directional="true"/>
+    <geom name="floor" type="plane" size="2 2 0.05" material="floor_mat"/>
+
+    <!-- Both cameras are virtual sensors fixed in the world frame. -->
+    <camera name="overview" pos="1.15 -1.55 0.95"
+            xyaxes="0.80 0.60 0 -0.25 0.34 0.91" fovy="52"/>
+    <camera name="side" pos="0 -1.65 0.62"
+            xyaxes="1 0 0 0 0.18 0.98" fovy="48"/>
+
+    <body name="base" pos="0 0 0.08">
+      <geom name="base_plate" type="cylinder" size="0.13 0.04"
+            material="link_dark" mass="1.2" contype="0" conaffinity="0"/>
+      <geom name="shoulder_motor" type="cylinder" size="0.075 0.07"
+            euler="1.570796 0 0" material="motor" mass="0.32"
+            contype="0" conaffinity="0"/>
+
+      <body name="link1" pos="0 0 0.07">
+        <joint name="shoulder" class="dm4310" axis="0 1 0"
+               range="-1.20 1.20"/>
+        <geom name="link1_geom" type="capsule"
+              fromto="0 0 0 0 0 0.30" size="0.045"
+              material="link_light" mass="0.35" contype="0" conaffinity="0"/>
+
+        <body name="elbow_body" pos="0 0 0.30">
+          <geom name="elbow_motor" type="cylinder" size="0.065 0.06"
+                euler="1.570796 0 0" material="motor" mass="0.18"
+                contype="0" conaffinity="0"/>
+          <joint name="elbow" class="dm4310" axis="0 1 0"
+                 range="-1.40 1.40"/>
+          <geom name="link2_geom" type="capsule"
+                fromto="0 0 0.02 0 0 0.27" size="0.038"
+                material="link_dark" mass="0.25" contype="0" conaffinity="0"/>
+
+          <body name="handle_body" pos="0 0 0.29">
+            <geom name="handle_stem" type="capsule"
+                  fromto="0 0 0 0 0 0.15" size="0.022"
+                  material="handle" mass="0.08" contype="0" conaffinity="0"/>
+            <geom name="handle_bar" type="capsule"
+                  fromto="-0.08 0 0.15 0.08 0 0.15" size="0.018"
+                  material="handle" mass="0.05" contype="0" conaffinity="0"/>
+            <site name="end_effector" pos="0 0 0.15" size="0.015"
+                  rgba="1 0.2 0.1 1"/>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <position name="shoulder_ctrl" joint="shoulder" class="dm4310"
+              ctrlrange="-1.20 1.20"/>
+    <position name="elbow_ctrl" joint="elbow" class="dm4310"
+              ctrlrange="-1.40 1.40"/>
+  </actuator>
+
+  <sensor>
+    <jointpos name="shoulder_pos" joint="shoulder"/>
+    <jointpos name="elbow_pos" joint="elbow"/>
+    <jointvel name="shoulder_vel" joint="shoulder"/>
+    <jointvel name="elbow_vel" joint="elbow"/>
+    <actuatorfrc name="shoulder_force" actuator="shoulder_ctrl"/>
+    <actuatorfrc name="elbow_force" actuator="elbow_ctrl"/>
+  </sensor>
+
+  <keyframe>
+    <key name="home" qpos="0.25 -0.50" ctrl="0.25 -0.50"/>
+  </keyframe>
+</mujoco>
