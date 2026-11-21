@@ -3,6 +3,8 @@
 **/.venv/
 **/__pycache__/
 **/.pytest_cache/
+**/.ruff_cache/
+**/node_modules/
 **/.coverage
 **/outputs/
 **/*.py[cod]
@@ -10,6 +12,33 @@
 
 # Local upstream source checkouts are reproducible dependencies.
 openarm_v2/upstream/
+vr_teleoperation/upstream/
+vr_teleoperation/downloads/
+vr_teleoperation/deps/
+vr_teleoperation/data/
+vr_teleoperation/local/certs/
+vr_teleoperation/local/out/
+vr_teleoperation/local/*.runtime.yaml
+vr_teleoperation/local/neck_pivot.yaml
+vr_teleoperation/local/neutral_capture.yaml
+vr_teleoperation/local/neutral_capture.yaml.tmp
+vr_teleoperation/local/three_camera/mock_verification.json
+
+# Keep local experiment/media payloads out of source control; retain indexes.
+vr_teleoperation/**/evidence/**/*
+!vr_teleoperation/**/evidence/**/
+!vr_teleoperation/**/evidence/**/README.md
+vr_teleoperation/**/.capture-config/
+vr_teleoperation/**/camera_timing/
+vr_teleoperation/**/*.parquet
+vr_teleoperation/**/*.log
+vr_teleoperation/**/*.stderr
+vr_teleoperation/**/*.pcap
+vr_teleoperation/**/*.pcapng
+
+# Local presentation work is independent of the runnable robotics project.
+/reports/
+/*.odp
 
 # Credentials, editor state, and large model artifacts.
 .env

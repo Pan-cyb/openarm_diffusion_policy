@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+wifi_if="${WIFI_IF:-wlp4s0}"
+ap_if="${AP_IF:-ap0}"
+hotspot="${HOTSPOT_CONNECTION:-Concurrent-Hotspot}"
+
+log() {
+  printf '%s\n' "$*"
+  logger -t openarm-webxr-hotspot "$*"
+}
+
+channel=""
+frequency=""
+for _ in {1..60}; do
+  channel=$(iw dev "$wifi_if" info 2>/dev/null | awk '/channel/ {print $2; exit}')
+  frequency=$(
+    iw dev "$wifi_if" info 2>/dev/null |
+      awk -F'[ (]' '/channel/ {print $4; exit}'
+  )
+  if [[ "$channel" =~ ^[0-9]+$ && "$frequency" =~ ^[0-9]+$ ]]; then
+    break
+  fi
+  sleep 2
+done
+
+if [[ ! "$channel" =~ ^[0-9]+$ || ! "$frequency" =~ ^[0-9]+$ ]]; then
+  log "No active upstream Wi-Fi channel on ${wifi_if}; hotspot sync deferred."
+  exit 0
+fi
+
+case "$channel" in
+  52|56|60|64)
+    log "Upstream channel ${channel} is DFS; pxy111 was not started."
+    exit 0
+    ;;
+esac
+
+if (( frequency >= 5000 )); then
+  band=a
+else
+  band=bg
+fi
+
+if ! iw dev "$ap_if" info >/dev/null 2>&1; then
+  systemctl restart codex-wifi-ap-interface.service
+fi
+
+for _ in {1..20}; do
+  [[ -d "/sys/class/net/${ap_if}" ]] && break
+  sleep 0.25
+done
+if [[ ! -d "/sys/class/net/${ap_if}" ]]; then
+  log "The ${ap_if} interface was not created."
+  exit 1
+fi
+
+nmcli device set "$ap_if" managed yes
+
+# Client profiles must never take ownership of the dedicated AP interface.
+while IFS=: read -r uuid name; do
+  [[ -n "$uuid" ]] || continue
+  if [[ "$name" != "$hotspot" ]]; then
+    nmcli connection modify "$uuid" connection.autoconnect no
+  fi
+done < <(
+  nmcli -t -f UUID,NAME,TYPE connection show |
+    while IFS=: read -r uuid name type; do
+      [[ "$type" == "802-11-wireless" ]] || continue
+      interface_name=$(nmcli -g connection.interface-name connection show "$uuid")
+      [[ "$interface_name" == "$ap_if" ]] && printf '%s:%s\n' "$uuid" "$name"
+    done
+)
+
+active_connection=$(
+  nmcli -g GENERAL.CONNECTION device show "$ap_if" 2>/dev/null || true
+)
+ap_channel=$(iw dev "$ap_if" info 2>/dev/null | awk '/channel/ {print $2; exit}')
+if [[ "$active_connection" == "$hotspot" && "$ap_channel" == "$channel" ]]; then
+  log "pxy111 already active on ${ap_if}, channel ${channel}."
+  exit 0
+fi
+
+if [[ -n "$active_connection" && "$active_connection" != "--" ]]; then
+  nmcli connection down "$active_connection" >/dev/null 2>&1 || true
+fi
+nmcli connection down "$hotspot" >/dev/null 2>&1 || true
+nmcli connection modify "$hotspot" \
+  connection.interface-name "$ap_if" \
+  connection.autoconnect no \
+  802-11-wireless.mode ap \
+  802-11-wireless.band "$band" \
+  802-11-wireless.channel "$channel" \
+  ipv4.method shared \
+  ipv6.method disabled
+nmcli connection up id "$hotspot" ifname "$ap_if" >/dev/null
+
+log "pxy111 active on ${ap_if}, channel ${channel}."

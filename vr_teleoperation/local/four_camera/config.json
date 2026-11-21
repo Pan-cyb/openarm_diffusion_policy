@@ -1,0 +1,42 @@
+{
+  "fps": 30,
+  "payload": 1280,
+  "width": 1280,
+  "height": 720,
+  "manual_exposure": null,
+  "gain": null,
+  "ae_priority": 0,
+  "warmup_seconds": 3,
+  "min_frames": 10,
+  "max_frame_age_seconds": 0.2,
+  "max_snapshot_skew_seconds": 0.05,
+  "min_rate_ratio": 0.95,
+  "max_rate_ratio": 1.1,
+  "ring_capacity": 90,
+  "cameras": [
+    {
+      "port": "1",
+      "native_name": "camera_port_1",
+      "role": "global",
+      "rotation_degrees": 180
+    },
+    {
+      "port": "2.2",
+      "native_name": "wrist_port_2_2",
+      "role": "wrist_right",
+      "rotation_degrees": 180
+    },
+    {
+      "port": "2.3",
+      "native_name": "wrist_port_2_3",
+      "role": "wrist_left",
+      "rotation_degrees": 180
+    },
+    {
+      "port": "2.4",
+      "native_name": "camera_port_2_4",
+      "role": "chest",
+      "rotation_degrees": 0
+    }
+  ]
+}

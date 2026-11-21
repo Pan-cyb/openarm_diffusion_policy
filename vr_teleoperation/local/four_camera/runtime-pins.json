@@ -1,0 +1,19 @@
+{
+  "base_version": "1.1.0",
+  "transport_policy": "capture_backpressure_only",
+  "installation_kind": "verified_official_wheels",
+  "modules": {
+    "sdk": {
+      "relative_path": "dora/dora.abi3.so",
+      "sha256": "017391a8d1d1511ad3b6b06502dc18290a4eaeed117bb608a80dee7e6f2cace0"
+    },
+    "cli": {
+      "relative_path": "dora_cli/dora_cli.abi3.so",
+      "sha256": "e5298e82bc742c270f5049a05ff0f2aad95703fc40f49564d7f92c2a50bfe2dd"
+    }
+  },
+  "wheels": {
+    "dora_rs-1.1.0-cp311-abi3-manylinux_2_28_x86_64.whl": "788ca09301d03041f823bdd7a5aca1241718730c21e5928bbc9abcc45a7fd397",
+    "dora_rs_cli-1.1.0-cp311-abi3-manylinux_2_28_x86_64.whl": "f681b189a0ab7aaee5f1346f86550aea651712c658c9f1c352469f9313cfc8eb"
+  }
+}

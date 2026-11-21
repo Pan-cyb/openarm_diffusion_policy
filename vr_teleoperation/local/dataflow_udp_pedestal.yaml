@@ -1,0 +1,77 @@
+# Minimal Quest native UDP -> IK -> OpenArm V2 pedestal MuJoCo dataflow.
+#
+# This is the controller-only mode. It intentionally excludes WebXR, the data
+# collection UI, the recorder, real robot drivers and offscreen camera rendering.
+
+nodes:
+  - id: quest
+    path: dora-openarm-quest-receiver
+    args: >-
+      --host 0.0.0.0
+      --port 5006
+      --max-linear-speed 1.0
+      --max-angular-speed 6.0
+    inputs:
+      tick: dora/timer/millis/10
+    outputs:
+      - pose_right
+      - trigger_right
+      - pose_left
+      - trigger_left
+      - grip_right
+      - grip_left
+      - joystick_x_right
+      - joystick_y_right
+      - joystick_x_left
+      - joystick_y_left
+      - button_a
+      - button_b
+      - button_x
+      - button_y
+      - status
+      - vr_receive_times
+      - pose_reference
+
+  - id: ik
+    path: dora-openarm-ik
+    args: >-
+      --xml /home/pan/openarm_diffusion_policy/openarm_v2/vendor/openarm_mujoco/v2/pedestal/pedestal.xml
+      --keyframe home
+      --mode bimanual
+      --tick-hz 100
+      --max-iters 5
+      --damping 0.1
+      --posture-cost 0
+      --lm-damping 0.01
+      --limit-velocity
+      --origin-frame arm_origin
+      --origin-frame-type site
+    inputs:
+      target_right: quest/pose_right
+      target_left: quest/pose_left
+      trigger_right: quest/trigger_right
+      trigger_left: quest/trigger_left
+    outputs:
+      - position_right
+      - position_left
+      - status
+
+  - id: mujoco
+    path: dora-openarm-mujoco
+    args: >-
+      --xml /home/pan/openarm_diffusion_policy/openarm_v2/vendor/openarm_mujoco/v2/pedestal/pedestal.xml
+      --keyframe home
+      --enable-collision
+      --ctrl
+      --viewer 30
+      --no-render
+      --debug-frames
+      --origin-frame arm_origin
+      --origin-frame-type site
+    inputs:
+      move_position_right: ik/position_right
+      move_position_left: ik/position_left
+      pose_right: quest/pose_right
+      pose_left: quest/pose_left
+    outputs:
+      - status

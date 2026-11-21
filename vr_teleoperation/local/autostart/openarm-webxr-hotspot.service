@@ -1,0 +1,12 @@
+[Unit]
+Description=Keep the pxy111 hotspot synchronized with the upstream Wi-Fi channel
+After=NetworkManager.service codex-wifi-ap-interface.service
+Requires=NetworkManager.service codex-wifi-ap-interface.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/openarm-webxr-hotspot-sync
+TimeoutStartSec=150
+
+[Install]
+WantedBy=multi-user.target

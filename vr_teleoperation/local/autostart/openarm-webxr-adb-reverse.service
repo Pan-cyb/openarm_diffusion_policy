@@ -1,0 +1,12 @@
+[Unit]
+Description=Keep the Quest WebXR ADB reverse mapping active
+After=default.target
+
+[Service]
+Type=simple
+ExecStart=/home/pan/openarm_diffusion_policy/vr_teleoperation/local/webxr_adb_reverse_watch.sh
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target

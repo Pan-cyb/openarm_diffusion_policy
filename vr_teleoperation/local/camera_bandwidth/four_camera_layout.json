@@ -1,0 +1,15 @@
+{
+  "confirmed_on": "2026-11-20",
+  "source": "User confirmation in this chat after reboot",
+  "bus": 3,
+  "vid_pid": "2bcf:1258",
+  "cameras": [
+    {"port": "1", "native_name": "camera_port_1", "role": "global", "rotation_degrees": 180},
+    {"port": "2.2", "native_name": "wrist_port_2_2", "role": "wrist_right", "rotation_degrees": 180},
+    {"port": "2.3", "native_name": "wrist_port_2_3", "role": "wrist_left", "rotation_degrees": 180},
+    {"port": "2.4", "native_name": "camera_port_2_4", "role": "chest", "rotation_degrees": 0}
+  ],
+  "status": "Confirmed physical layout; production three-camera DJI graph is NOT migrated to this layout",
+  "candidate_four_stream_payload": 1280,
+  "candidate_status": "Diagnostic only; observed frame-rate differences and sequence gaps; host reboot needs investigation"
+}

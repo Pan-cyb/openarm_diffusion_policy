@@ -1,0 +1,10 @@
+# WebXR view for the first V2 pedestal simulation milestone.
+view: none
+
+session:
+  mode: immersive-ar
+
+pose:
+  # Match the current native UDP behavior before tuning operator calibration.
+  mode: relative
+  frame_offset: [-0.085, 0.0, -0.14]

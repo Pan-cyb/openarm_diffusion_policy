@@ -1,0 +1,106 @@
+# Opt-in derivative: official robot/leader nodes unchanged; cameras are external.
+nodes:
+  - id: ui
+    path: /home/pan/openarm_diffusion_policy/vr_teleoperation/upstream/dora-openarm-data-collection/.venv/bin/python
+    args: /home/pan/openarm_diffusion_policy/vr_teleoperation/local/three_camera/ui_adapter.py
+    env:
+      METADATA_FILE: /home/pan/openarm_diffusion_policy/vr_teleoperation/local/three_camera/metadata_drawer.yaml
+    inputs:
+      tick: dora/timer/secs/1
+      capture_tick: dora/timer/millis/100
+      recorder_status: recorder/recording_status
+      arm_command: arm-command-mux/arm_command
+      vr_receive_times: leader/vr_receive_times
+      ker_position: leader/ker_position
+      ker_metadata: leader/metadata
+      camera_wrist_right:
+        source: cameras/camera_wrist_right
+        queue_size: 1
+      camera_wrist_left:
+        source: cameras/camera_wrist_left
+        queue_size: 1
+      # UI-only slot alias. Recorder stores this as chest, NOT ceiling.
+      camera_ceiling:
+        source: cameras/camera_chest
+        queue_size: 1
+      arm_status_right: robot/status_right
+      arm_status_left: robot/status_left
+      arm_state_right: robot/arm_state_right
+      arm_state_left: robot/arm_state_left
+    outputs: [command, arm_command]
+
+  - id: arm-command-mux
+    path: /home/pan/openarm_diffusion_policy/vr_teleoperation/upstream/dora-openarm-data-collection/.venv/bin/python
+    args: /home/pan/openarm_diffusion_policy/vr_teleoperation/local/arm_command_mux.py
+    inputs:
+      ui: ui/arm_command
+      vr: leader/arm_command
+    outputs: [arm_command]
+
+  - id: quittable-tick-leader
+    path: dora-openarm-quitter
+    inputs:
+      command: ui/command
+      tick: dora/timer/millis/4
+    outputs: [tick]
+
+  - id: quittable-tick-camera
+    path: dora-openarm-quitter
+    inputs:
+      command: ui/command
+      tick: dora/timer/millis/33
+    outputs: [tick]
+
+  - id: leader
+    module: leader_webxr_real_pedestal.yaml
+    inputs:
+      tick: quittable-tick-leader/tick
+      camera_head_left: robot/camera_head_left
+      camera_head_right: robot/camera_head_right
+
+  - id: robot
+    module: robot_real_pedestal.yaml
+    inputs:
+      tick: quittable-tick-leader/tick
+      camera_tick: quittable-tick-camera/tick
+      command: ui/command
+      arm_command: arm-command-mux/arm_command
+      position_right: leader/follower_position_right
+      position_left: leader/follower_position_left
+      joystick_y: leader/joystick_y_left
+      button_x: leader/button_x
+      pose_right: leader/pose_right
+      pose_left: leader/pose_left
+
+  - id: cameras
+    path: /home/pan/openarm_diffusion_policy/vr_teleoperation/upstream/dora-openarm-data-collection/.venv/bin/python
+    args: /home/pan/openarm_diffusion_policy/vr_teleoperation/local/three_camera/node.py
+    inputs:
+      tick: quittable-tick-camera/tick
+      command: ui/command
+      recorder_status: recorder/recording_status
+    outputs:
+      - camera_chest
+      - camera_wrist_left
+      - camera_wrist_right
+      - recording_command
+      - health
+
+  - id: recorder
+    path: /home/pan/openarm_diffusion_policy/vr_teleoperation/upstream/dora-openarm-data-collection/.venv/bin/python
+    args: /home/pan/openarm_diffusion_policy/vr_teleoperation/local/three_camera/recorder_adapter.py
+    outputs: [recording_status]
+    env:
+      METADATA_FILE: /home/pan/openarm_diffusion_policy/vr_teleoperation/local/three_camera/metadata_drawer.yaml
+      DIRECTORY: /media/pan/Expansion1/openarm_datasets/drawer_block/raw
+      NAME: drawer_block
+    inputs:
+      command: cameras/recording_command
+      # Recorder-only bounded buffers; do not backpressure the robot control path.
+      arm_right_action: {source: leader/follower_position_right, queue_size: 1000}
+      arm_left_action: {source: leader/follower_position_left, queue_size: 1000}
+      arm_right_observation: {source: robot/state_right, queue_size: 1000}
+      arm_left_observation: {source: robot/state_left, queue_size: 1000}
+      camera_chest: {source: cameras/camera_chest, queue_size: 32}
+      camera_wrist_left: {source: cameras/camera_wrist_left, queue_size: 32}
+      camera_wrist_right: {source: cameras/camera_wrist_right, queue_size: 32}

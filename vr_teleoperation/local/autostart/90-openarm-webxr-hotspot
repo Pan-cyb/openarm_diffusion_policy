@@ -1,0 +1,11 @@
+#!/bin/sh
+
+if [ "$1" != "wlp4s0" ]; then
+  exit 0
+fi
+
+case "$2" in
+  up|dhcp4-change|connectivity-change)
+    systemctl --no-block restart openarm-webxr-hotspot.service
+    ;;
+esac

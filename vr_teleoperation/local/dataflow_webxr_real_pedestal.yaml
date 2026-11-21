@@ -1,0 +1,105 @@
+# Local transport adaptation of the official WebXR + real pedestal dataflow.
+#
+# The UI, recorder and robot module are the pinned upstream implementations.
+# Only the leader transport is replaced by leader_webxr_real_pedestal.yaml.
+
+nodes:
+  - id: ui
+    path: dora-openarm-data-collection-ui
+    env:
+      METADATA_FILE: /home/pan/openarm_diffusion_policy/vr_teleoperation/upstream/dora-openarm-data-collection/metadata_pedestal.yaml
+    inputs:
+      tick: dora/timer/secs/1
+      vr_receive_times:
+        source: leader/vr_receive_times
+        queue_size: 100
+      ker_position: leader/ker_position
+      ker_metadata: leader/metadata
+      camera_wrist_right:
+        source: robot/camera_wrist_right
+        queue_size: 1
+      camera_wrist_left:
+        source: robot/camera_wrist_left
+        queue_size: 1
+      camera_head_left:
+        source: robot/camera_head_left
+        queue_size: 1
+      camera_head_right:
+        source: robot/camera_head_right
+        queue_size: 1
+      camera_ceiling:
+        source: robot/camera_ceiling
+        queue_size: 1
+      arm_status_right: robot/status_right
+      arm_status_left: robot/status_left
+      arm_state_right: robot/arm_state_right
+      arm_state_left: robot/arm_state_left
+    outputs:
+      - command
+      - arm_command
+
+  - id: arm-command-mux
+    path: /home/pan/openarm_diffusion_policy/vr_teleoperation/upstream/dora-openarm-data-collection/.venv/bin/python
+    args: /home/pan/openarm_diffusion_policy/vr_teleoperation/local/arm_command_mux.py
+    inputs:
+      ui: ui/arm_command
+      vr: leader/arm_command
+    outputs:
+      - arm_command
+
+  - id: quittable-tick-leader
+    path: dora-openarm-quitter
+    inputs:
+      command: ui/command
+      tick: dora/timer/millis/4
+    outputs:
+      - tick
+
+  - id: quittable-tick-camera
+    path: dora-openarm-quitter
+    inputs:
+      command: ui/command
+      tick: dora/timer/millis/33
+    outputs:
+      - tick
+
+  - id: leader
+    module: leader_webxr_real_pedestal.yaml
+    inputs:
+      tick: quittable-tick-leader/tick
+      camera_head_left: robot/camera_head_left
+      camera_head_right: robot/camera_head_right
+
+  - id: robot
+    module: robot_real_pedestal.yaml
+    inputs:
+      tick: quittable-tick-leader/tick
+      camera_tick: quittable-tick-camera/tick
+      command: ui/command
+      arm_command: arm-command-mux/arm_command
+      position_right: leader/follower_position_right
+      position_left: leader/follower_position_left
+      joystick_y: leader/joystick_y_left
+      button_x: leader/button_x
+      pose_right: leader/pose_right
+      pose_left: leader/pose_left
+
+  - id: recorder
+    path: dora-openarm-dataset-recorder
+    env:
+      METADATA_FILE: /home/pan/openarm_diffusion_policy/vr_teleoperation/upstream/dora-openarm-data-collection/metadata_pedestal.yaml
+      DIRECTORY: /home/pan/openarm_diffusion_policy/vr_teleoperation/upstream/dora-openarm-data-collection/data/webxr-pedestal
+    inputs:
+      command: ui/command
+      arm_right_action: leader/follower_position_right
+      arm_left_action: leader/follower_position_left
+      arm_right_observation: robot/state_right
+      arm_left_observation: robot/state_left
+      camera_wrist_right: robot/camera_wrist_right
+      camera_wrist_left: robot/camera_wrist_left
+      camera_head_left: robot/camera_head_left
+      camera_head_right: robot/camera_head_right
+      camera_ceiling: robot/camera_ceiling
+      ker_metadata: leader/metadata
+      elevation_action: robot/elevation_action
+      elevation_observation: robot/elevation_observation

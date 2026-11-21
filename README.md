@@ -1,9 +1,10 @@
 # OpenArm 工作区
 
-本目录现在只包含两个用途明确的项目：
+本目录现在包含三个用途明确的项目：
 
 ```text
 openarm_v2/                    OpenArm 2.0 双臂主线
+vr_teleoperation/              Quest WebXR 仿真、V2 真机遥操与四路采集
 two_joint_teaching_arm_demo/   两关节 MuJoCo 教学实例
 ```
 
@@ -26,6 +27,24 @@ cd /home/pan/openarm_diffusion_policy/openarm_v2
 cd /home/pan/openarm_diffusion_policy/openarm_v2
 ../.venv-dp/bin/python scripts/launch_v2.py
 ```
+
+启动 Quest WebXR pedestal 仿真遥操作：
+
+```bash
+cd /home/pan/openarm_diffusion_policy/vr_teleoperation/local
+bash run_webxr_pedestal.sh
+```
+
+保持 Quest USB 调试连接，在 Quest 浏览器打开：
+
+```text
+http://localhost:8080/
+```
+
+当前四路真实采集入口和单次 `START` 操作见
+[`vr_teleoperation/docs/数据采集操作流程.md`](vr_teleoperation/docs/数据采集操作流程.md)。
+实机入口会使能机械臂并产生运动，不是普通预览命令；须遵守现场授权与安全边界。
+环境、第三方依赖、原始数据、实录图像/日志及本地汇报文件不提交 Git。
 
 运行教学实例测试：
 

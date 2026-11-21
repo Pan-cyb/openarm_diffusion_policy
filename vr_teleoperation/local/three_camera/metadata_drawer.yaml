@@ -1,0 +1,43 @@
+# Template only. Operator/location and physical port roles need confirmation.
+location: null
+operator: null
+tasks:
+  - prompt: 用左手拉开抽屉，右手抓起方块并放入抽屉。
+    description: 双臂完整示范；初始抽屉关闭，结束方块完全进入抽屉并释放。
+equipment:
+  id: OpenArmV2-pedestal-local
+  version: "2.0"
+  embodiments:
+    arms:
+      id: OpenArm
+      version: "2.0"
+  perceptions:
+    cameras:
+      chest:
+        id: DJI-Osmo-Action-5-Pro
+        source_encoding: h264
+        stored_encoding: jpeg
+        mount: chest
+      wrist_left:
+        id: OV4689
+        physical_port: null
+        source_encoding: mjpeg
+        stored_encoding: jpeg
+        image_transform: rot180-v1
+        transform_applied_at: camera-service-before-store
+      wrist_right:
+        id: OV4689
+        physical_port: null
+        source_encoding: mjpeg
+        stored_encoding: jpeg
+        image_transform: rot180-v1
+        transform_applied_at: camera-service-before-store
+capture_contract:
+  version: 2
+  requires_camera_timing_audit: true
+  image_width: 1280
+  image_height: 720
+  source_nominal_fps: 30
+  timestamp_alignment_verified: false
+  exposure_synchronization_verified: false
+  force_or_drawer_position_sensor_recorded: false
