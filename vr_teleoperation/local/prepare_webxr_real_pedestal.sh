@@ -53,19 +53,28 @@ active_ap_connection=$(
   nmcli -t -f DEVICE,CONNECTION device status |
     awk -F: -v device="$ap_if" '$1 == device {print $2; exit}'
 )
-if [[ -n "$active_ap_connection" && "$active_ap_connection" != "$hotspot" ]]; then
-  nmcli connection down "$active_ap_connection" >/dev/null 2>&1 || true
+ap_info=$(iw dev "$ap_if" info)
+if [[ "$active_ap_connection" == "$hotspot" \
+      && $(awk '$1=="type"{print $2}' <<<"$ap_info") == AP \
+      && $(awk '$1=="ssid"{print $2}' <<<"$ap_info") == pxy111 \
+      && $(awk '$1=="channel"{print $2}' <<<"$ap_info") == "$channel" ]] \
+    && ip -o -4 addr show dev "$ap_if" | grep -qF ' inet 10.42.0.1/24 '; then
+  printf 'Reusing active hotspot pxy111; Quest connection left intact.\n'
+else
+  if [[ -n "$active_ap_connection" && "$active_ap_connection" != "$hotspot" ]]; then
+    nmcli connection down "$active_ap_connection" >/dev/null 2>&1 || true
+  fi
+  nmcli connection down "$hotspot" >/dev/null 2>&1 || true
+  nmcli connection modify "$hotspot" \
+    connection.interface-name "$ap_if" \
+    connection.autoconnect no \
+    802-11-wireless.mode ap \
+    802-11-wireless.band "$band" \
+    802-11-wireless.channel "$channel" \
+    ipv4.method shared \
+    ipv6.method disabled
+  nmcli connection up id "$hotspot" ifname "$ap_if"
 fi
-nmcli connection down "$hotspot" >/dev/null 2>&1 || true
-nmcli connection modify "$hotspot" \
-  connection.interface-name "$ap_if" \
-  connection.autoconnect no \
-  802-11-wireless.mode ap \
-  802-11-wireless.band "$band" \
-  802-11-wireless.channel "$channel" \
-  ipv4.method shared \
-  ipv6.method disabled
-nmcli connection up id "$hotspot" ifname "$ap_if"
 
 for interface in can0 can1; do
   ip link set "$interface" down || true

@@ -8,8 +8,8 @@
   `../openarm_v2/vendor/openarm_mujoco/v2/pedestal/pedestal.xml`。
 - 正式数据采集只使用显式授权的分阶段入口；默认离线/mock，不因软件接入完成
   自动开设备。实机只使用官方 `dora-openarm` pedestal 驱动。
-- WebXR immersive 是唯一当前主线。
-- 原生 UDP controller-only 是暂停的实验坑位，保留实现但不作为当前验收入口。
+- 区分正常佩戴的 immersive WebXR 与显式选择的 Transmitter `hand-delta` 四路采集。
+  后者使用追踪空间手柄增量；不要用旧 UDP 实验图或 WebXR 的头显相对映射替代。
 - 开发阶段通过 ADB reverse 暴露 `http://localhost:8080`，不修改 Quest 信任区。
 - WebXR 主线要求正常佩戴头显；不得把 `neck` 位姿模式解释为可以把头显挂在脖子上。
 
@@ -57,7 +57,8 @@
 - 本地 HTTP 包装器只替换 Web 服务传输层，不复制或修改上游姿态处理逻辑。
 - 头显坐标轴显示原始 WebXR 手柄 aim frame；MuJoCo 坐标轴显示机器人映射后的目标 frame。
 - 不得把 IK 有输出解释为目标可达；必须另行检查 FK 残差、关节裕量、奇异位形和碰撞。
-- 未明确恢复 UDP 路线前，不继续测试挂脖子用法或把 UDP 作为采集主线。
+- `run_hand_delta.sh model` 不驱动机械臂，`capture` 是独立的分阶段实机入口；
+  不把模型链路、单段固定回放或旧 WebXR 实录当作新组合的真机验收。
 - 未经新的明确授权，不打开 CAN/串口或发送真机运动命令。
 - 实机启动不得设置为开机自启；必须现场输入 `START` 运动确认词。
 - 单条 CAN 总线同时只能有一个控制或诊断进程，不并行运行 `monitor`、

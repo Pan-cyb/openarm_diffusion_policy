@@ -43,10 +43,15 @@ do
   fi
 done
 
-pkexec "$prepare"
-"$adb_reverse" --once
-
-printf 'Quest WebXR URL: http://localhost:8080/\n'
+mkdir -p -m 700 "$HOME/.cache/openarm-dp-field"
+exec 8>"$HOME/.cache/openarm-dp-field/verify.lock"
+flock -n 8 || { echo '回放、DP 或其他实机所有者已占用；不重配 CAN。' >&2; exit 1; }
+if [[ "${OPENARM_LEADER:-webxr}" == "hand-delta" ]]; then
+  if ss -Hlun 'sport = :5006' | grep -q .; then
+    echo 'UDP 5006 已被占用；请先退出 neck_sim.py 或旧接收器。未启动机器人数据流。' >&2
+    exit 1
+  fi
+fi
 printf 'Desktop UI: http://127.0.0.1:8000/\n'
 printf 'Robot: real OpenArm V2 pedestal on can0/can1\n'
 printf 'WARNING: the official UI starts and enables both arms on boot.\n'
@@ -61,6 +66,16 @@ else
   fi
 fi
 
+if [[ -n "$capture_cli" ]]; then
+  "$upstream/.venv/bin/python" "$script_dir/four_camera/quest_wear.py" "$adb"
+fi
+pkexec "$prepare"
+if [[ "${OPENARM_LEADER:-webxr}" == "hand-delta" ]]; then
+  printf 'Quest: OpenArm Pose Transmitter -> 10.42.0.1:5006 (hand-delta), no WebXR.\n'
+else
+  "$adb_reverse" --once
+  printf 'Quest WebXR URL: http://localhost:8080/\n'
+fi
 cd "$upstream"
 if [[ -n "$capture_cli" ]]; then
   PATH="$upstream/.venv/bin:$PATH" \

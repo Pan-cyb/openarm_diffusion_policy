@@ -14,6 +14,12 @@ two_joint_teaching_arm_demo/   两关节 MuJoCo 教学实例
 
 ## 快速入口
 
+**新采集视觉 DP：** 11 月 28 日的 CNN / Transformer 批次清单、训练产物、四视角示范起点和两种独立试用命令见[新采集试训](vr_teleoperation/local/dp_pilot/新采集试训.md)。
+
+**采集抽屉示范：** `bash vr_teleoperation/local/run_hand_delta.sh capture`。用 Quest Transmitter 和电脑 8000 页面，不启动 DP、不进入头显 8080。新会话使用加宽起点、原 pedestal PD 和首条位置指令即生效的 100% 模型重力前馈。先看[本次采集交接](vr_teleoperation/docs/handoff/2026-11-28_1656_capture_pdff.md)；输入 `START` 后双臂可能立即运动。
+
+**不用 VR，在电脑上运行 DP：** `bash /home/pan/openarm_diffusion_policy/run_dp.sh`。只运行这一条命令，现场输入 `START` 到预设位，再点击开始 DP。[运动和停止说明](vr_teleoperation/local/dp_pilot/真机部署准备.md)。原 `run_live_verify.sh` 仍只预测、不运动。运动入口仅通过离线测试。
+
 检查 V2 模型：
 
 ```bash

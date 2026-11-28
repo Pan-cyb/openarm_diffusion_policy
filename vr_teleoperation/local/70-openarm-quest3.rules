@@ -1,0 +1,2 @@
+# Grant active-seat access to the Quest 3, not to other USB devices.
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="2833", ATTR{idProduct}=="5012|5013", ATTR{product}=="Quest 3", TAG+="uaccess"

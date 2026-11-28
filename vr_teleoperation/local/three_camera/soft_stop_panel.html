@@ -1,0 +1,47 @@
+<aside style="position:sticky;top:0;z-index:100;padding:10px;background:#231617;color:white;border-bottom:3px solid #e44135;text-align:center" aria-label="双臂软件停止">
+  <form id="soft-stop-form" action="/arm/soft-stop" method="post">
+    <button type="submit" style="font:bold 21px sans-serif;background:#ac1818;color:white;border:2px solid white;border-radius:6px;padding:10px 25px;cursor:pointer">双臂软件急停</button>
+  </form>
+  <span>失能后手臂或负载可能下落。不是硬件急停。</span>
+  <span id="soft-stop-msg" role="status" aria-live="polite">单击请求双臂停止。</span>
+</aside>
+<script>
+(() => {
+  const msg = document.getElementById("soft-stop-msg");
+  let generation = 0, submitted = false;
+  async function request(path, options) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 1500);
+    try { return await fetch(path, {...options, signal:controller.signal}); }
+    finally { clearTimeout(timer); }
+  }
+  const unknown = "通信未确认，实机状态未知；有危险请用硬件急停。";
+  const render = state => {
+    msg.textContent = state === "latched" ? "命令已锁定，实机是否停稳未确认。"
+      : state === "requested" || submitted ? "已请求停止，尚未确认锁定；有危险请用硬件急停。"
+      : "单击停臂并锁住本会话；不是硬件急停。";
+  };
+  async function poll() {
+    const seq = generation;
+    try {
+      const r = await request("/arm/soft-stop/status", {cache:"no-store"});
+      if (!r.ok) throw Error();
+      const s = await r.json();
+      if (seq === generation) render(s.state);
+    } catch { if (seq === generation) msg.textContent = unknown; }
+  }
+  document.getElementById("soft-stop-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    ++generation;
+    submitted = true;
+    render("requested");
+    try {
+      const r = await request("/arm/soft-stop", {method:"POST"});
+      if (!r.ok) throw Error();
+      await poll();
+    } catch { msg.textContent = unknown; }
+  });
+  poll();
+  setInterval(poll, 1000);
+})();
+</script>

@@ -33,7 +33,7 @@ def past_indices(stamps, grid):
     return indices
 
 
-def inspect_episode(root, episode, output):
+def inspect_episode(root, episode, output, *, frame_pause_s=.004):
     audit = [json.loads(line) for line in
              (root / f"camera_timing/episode_{episode}.jsonl").read_text().splitlines()]
     assert audit[0]["event"] == "start" and audit[-1]["command"] == "success"
@@ -74,7 +74,8 @@ def inspect_episode(root, episode, output):
                 label = f"{name} {(stamps[index] - start) / 1e9:.2f}s"
                 cv2.putText(sheet, label, (x + 4, y + 198),
                             cv2.FONT_HERSHEY_SIMPLEX, .43, (255, 255, 255), 1)
-            time.sleep(.004)
+            if frame_pause_s:
+                time.sleep(frame_pause_s)
         streams["camera/" + name] = stamps
         report["cameras"][name] = dict(
             timing(stamps), jpeg_hashes_checked=checked, decode_all_pass=True,

@@ -229,6 +229,22 @@ class HostMonitorTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "Host fault"):
             self.run_sample(86, "Hardware Error")
 
+    def test_motion_workbench_skips_temperature_only(self):
+        import sys
+        sys.path.append(str(service.HERE.parent / "camera_bandwidth"))
+        import commission_profile as profile
+        for fault in ("", "Hardware Error"):
+            sources = service.Sources(service.Store(test_config(), mock=False), 60)
+            with patch.object(profile,"cpu_temperature",side_effect=AssertionError), \
+                 patch.object(profile,"kernel_faults",return_value=fault) as kernel, \
+                 patch.object(sources.stop,"wait",side_effect=lambda _:sources.stop.set()):
+                if fault:
+                    with self.assertRaisesRegex(RuntimeError, "Host fault"):
+                        sources.monitor_host(motion_workbench=True)
+                else:
+                    sources.monitor_host(motion_workbench=True)
+                kernel.assert_called_once()
+
 
 class RateAcceptanceTests(unittest.TestCase):
     def populate(self, store, interval_ns, synthetic):
@@ -304,6 +320,33 @@ class RateAcceptanceTests(unittest.TestCase):
 
 
 class SnapshotTests(unittest.TestCase):
+    def test_dp_selects_latest_host_frame_not_latest_source_snapshot(self):
+        store = service.Store(test_config(), mock=True, monotonic_ns=Clock(1_100_000_000))
+        anchor = 9_000_000_000
+        for name in service.NAMES:
+            for seq, delta in enumerate((-75_000_000, -8_000_000, 3_000_000)):
+                f = frame(name,seq,anchor+delta,1_050_000_000+seq)
+                f.metadata["source_pts_ns"] = 123_000_000+seq*33_000_000
+                store.put(f)
+        _, latest = store.snapshot()
+        self.assertTrue(all(f.metadata["timestamp_ns"] > anchor for f in latest))
+        status, frames = store.snapshot(dp_host_anchor_ns=anchor)
+        self.assertEqual(status["dp_host_anchor_ns"],anchor)
+        self.assertEqual([f.metadata["timestamp_ns"] for f in frames],[anchor-8_000_000]*4)
+
+    def test_dp_does_not_accept_future_stale_or_incoherent_frames(self):
+        anchor = 9_000_000_000
+        for shift, expected in [(1,"future"),(-100_000_000,"stale DP frame"),
+                                (-75_000_000,"snapshot_skew_exceeded")]:
+            with self.subTest(shift=shift):
+                store = service.Store(test_config(),mock=True,monotonic_ns=Clock(1_100_000_000))
+                for name in service.NAMES:
+                    store.put(frame(name,0,anchor+(shift if name=="wrist_right" else 0),1_050_000_000))
+                status, frames = store.snapshot(dp_host_anchor_ns=anchor)
+                self.assertIn(expected,status["snapshot_error"])
+                self.assertFalse(status["ready"])
+                self.assertEqual(frames,[])
+
     def test_stale_snapshot_is_rejected_without_frames(self):
         clock = Clock(2_000_000_000)
         store = service.Store(test_config(), mock=True, monotonic_ns=clock)
@@ -436,6 +479,12 @@ class UnixProtocolTests(unittest.TestCase):
             self.assertEqual(health["frame_count"], 0)
 
             put_cycle(self.store, 0, 1_000_000_000, 1_050_000_000)
+            stream_a.write(b"dp_snapshot 1000000005\n")
+            status = read_json(stream_a)
+            self.assertEqual(status["dp_host_anchor_ns"],1_000_000_005)
+            self.assertEqual(status["frame_count"],4)
+            self.assertTrue(all(read_frame(stream_a).metadata["timestamp_ns"] <= 1_000_000_005
+                                for _ in range(4)))
             for stream in (stream_a, stream_b):
                 stream.write(b"drain\n")
                 status = read_json(stream)

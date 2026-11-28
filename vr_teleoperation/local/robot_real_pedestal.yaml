@@ -1,5 +1,4 @@
-# Local-path copy of the pinned official robot-pedestal module.
-# Node arguments and wiring intentionally match upstream exactly.
+# Official driver with a local latched no-parking stop adapter.
 
 module:
   name: robot-real-pedestal
@@ -31,8 +30,8 @@ module:
 
 nodes:
   - id: right
-    path: dora-openarm
-    args: "--side right --align-trigger gripper --config openarm_pedestal"
+    path: /home/pan/openarm_diffusion_policy/vr_teleoperation/upstream/dora-openarm-data-collection/.venv/bin/python
+    args: "/home/pan/openarm_diffusion_policy/vr_teleoperation/local/software_stop_arm.py --side right --align-trigger gripper --config openarm_pedestal"
     inputs:
       request_state: _mod/position_right
       move_position: _mod/position_right
@@ -42,8 +41,8 @@ nodes:
       - status
 
   - id: left
-    path: dora-openarm
-    args: "--side left --align-trigger gripper --config openarm_pedestal"
+    path: /home/pan/openarm_diffusion_policy/vr_teleoperation/upstream/dora-openarm-data-collection/.venv/bin/python
+    args: "/home/pan/openarm_diffusion_policy/vr_teleoperation/local/software_stop_arm.py --side left --align-trigger gripper --config openarm_pedestal"
     inputs:
       request_state: _mod/position_left
       move_position: _mod/position_left

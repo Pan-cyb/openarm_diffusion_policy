@@ -27,12 +27,13 @@ nodes:
       arm_status_left: robot/status_left
       arm_state_right: robot/arm_state_right
       arm_state_left: robot/arm_state_left
-    outputs: [command, arm_command]
+    outputs: [command, arm_command, soft_stop]
 
   - id: arm-command-mux
     path: /home/pan/openarm_diffusion_policy/vr_teleoperation/upstream/dora-openarm-data-collection/.venv/bin/python
     args: /home/pan/openarm_diffusion_policy/vr_teleoperation/local/arm_command_mux.py
     inputs:
+      soft_stop: ui/soft_stop
       ui: ui/arm_command
       vr: leader/arm_command
     outputs: [arm_command]

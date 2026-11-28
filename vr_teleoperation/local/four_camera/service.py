@@ -330,32 +330,50 @@ class Store:
         with self.lock:
             return self._status_locked(self.monotonic_ns())
 
-    def snapshot(self):
+    def snapshot(self, *, dp_host_anchor_ns=None):
         now_ns = self.monotonic_ns()
         with self.lock:
             status = self._status_locked(now_ns)
-            status["request"] = "snapshot"
+            dp = dp_host_anchor_ns is not None
+            status["request"] = "dp_snapshot" if dp else "snapshot"
+            if dp:
+                status["dp_host_anchor_ns"] = dp_host_anchor_ns
             if not status["ready"]:
                 status["snapshot_error"] = (
                     "source_fault" if self.error else "not_warmed_or_fresh"
                 )
                 return status, []
-            anchor_ns = min(
+            anchor_ns = dp_host_anchor_ns if dp else min(
                 self.rings[name][-1].frame.metadata["source_timestamp_ns"]
                 for name in NAMES
             )
             selected = {}
             for name in NAMES:
                 ring = self.rings[name]
-                timestamps = [
-                    item.frame.metadata["source_timestamp_ns"] for item in ring
-                ]
-                index = bisect.bisect_right(timestamps, anchor_ns) - 1
-                if index < 0:
+                if dp:
+                    # Training aligns by host receipt wall time, not source PTS.
+                    past = (item for item in ring if item.frame.metadata["timestamp_ns"] <= anchor_ns)
+                    item = max(past, key=lambda it: it.frame.metadata["timestamp_ns"], default=None)
+                else:
+                    timestamps = [it.frame.metadata["source_timestamp_ns"] for it in ring]
+                    index = bisect.bisect_right(timestamps, anchor_ns) - 1
+                    item = ring[index] if index >= 0 else None
+                if item is None:
                     status["ready"] = False
                     status["snapshot_error"] = f"no_frame_at_or_before_anchor:{name}"
+                    if dp:
+                        first = min(it.frame.metadata["timestamp_ns"] for it in ring)
+                        status["snapshot_error"] += f": earliest is {(first-anchor_ns)/1e6:.1f} ms in future"
                     return status, []
-                selected[name] = ring[index].frame
+                selected[name] = item.frame
+                if dp and anchor_ns - item.frame.metadata["timestamp_ns"] >= 100_000_000:
+                    age_ms = (anchor_ns-item.frame.metadata["timestamp_ns"])/1e6
+                    status["ready"] = False
+                    status["snapshot_error"] = f"stale DP frame:{name}: age={age_ms:.1f} ms (limit <100)"
+                    return status, []
+            if dp:
+                # Cross-camera skew is still measured on the original source clocks.
+                anchor_ns = max(f.metadata["source_timestamp_ns"] for f in selected.values())
             skew = {
                 name: (
                     anchor_ns - frame.metadata["source_timestamp_ns"]
@@ -456,6 +474,9 @@ class Handler(socketserver.StreamRequestHandler):
                     status["request"] = "health"
                 elif request == b"snapshot\n":
                     status, frames = self.server.store.snapshot()
+                elif (request.startswith(b"dp_snapshot ") and request.endswith(b"\n")
+                      and request[12:-1].isdigit() and len(request[12:-1]) <= 19):
+                    status, frames = self.server.store.snapshot(dp_host_anchor_ns=int(request[12:-1]))
                 elif request == b"drain\n":
                     status, frames, next_state = self.server.store.drain(
                         self.cursor_state
@@ -488,8 +509,8 @@ class Sources:
         sysfs_root=Path("/sys/bus/usb/devices"), privilege="pkexec",
         monotonic=time.monotonic,
     ):
-        if privilege not in ("pkexec", "sudo-n"):
-            raise ValueError("privilege must be pkexec or sudo-n")
+        if privilege not in ("pkexec", "sudo-n", "workbench"):
+            raise ValueError("unknown camera privilege mode")
         self.store = store
         self.max_seconds = max_seconds
         self.native_path = Path(native)
@@ -567,7 +588,7 @@ class Sources:
         command = privilege + [
             "/usr/bin/timeout", "--signal=TERM", "--kill-after=5s",
             f"{self.max_seconds + 15}s",
-            str(self.native_path),
+            ("/usr/local/lib/openarm-dp/uvc_pair_probe" if self.privilege=="workbench" else str(self.native_path)),
             str(self.max_seconds),
             str(config["width"]),
             str(config["height"]),
@@ -585,7 +606,7 @@ class Sources:
         command.extend(["--ports", ",".join(PORTS)])
         return command
 
-    def monitor_host(self):
+    def monitor_host(self, *, motion_workbench=False):
         sys.path.append(str(HERE.parent / "camera_bandwidth"))
         from commission_profile import (
             CPU_TEMPERATURE_LIMIT_KIND, CPU_TEMPERATURE_STOP_C,
@@ -593,19 +614,20 @@ class Sources:
         )
         started = int(time.time())
         while not self.stop.is_set():
-            temperature = cpu_temperature()
-            if temperature is None:
-                raise RuntimeError("Host safety monitor: CPU temperature unavailable")
-            print(json.dumps({"event": "host_temperature", "cpu_c": temperature,
-                              "monotonic_ns": time.monotonic_ns(),
-                              "warning": temperature >= CPU_TEMPERATURE_WARNING_C,
-                              "warning_c": CPU_TEMPERATURE_WARNING_C,
-                              "test_stop_c": CPU_TEMPERATURE_STOP_C,
-                              "temperature_limit_kind": CPU_TEMPERATURE_LIMIT_KIND}), flush=True)
-            if temperature >= CPU_TEMPERATURE_STOP_C:
-                raise RuntimeError(
-                    f"Camera capture CPU temperature stop ({CPU_TEMPERATURE_STOP_C} C)"
-                )
+            if not motion_workbench:
+                temperature = cpu_temperature()
+                if temperature is None:
+                    raise RuntimeError("Host safety monitor: CPU temperature unavailable")
+                print(json.dumps({"event": "host_temperature", "cpu_c": temperature,
+                                  "monotonic_ns": time.monotonic_ns(),
+                                  "warning": temperature >= CPU_TEMPERATURE_WARNING_C,
+                                  "warning_c": CPU_TEMPERATURE_WARNING_C,
+                                  "test_stop_c": CPU_TEMPERATURE_STOP_C,
+                                  "temperature_limit_kind": CPU_TEMPERATURE_LIMIT_KIND}), flush=True)
+                if temperature >= CPU_TEMPERATURE_STOP_C:
+                    raise RuntimeError(
+                        f"Camera capture CPU temperature stop ({CPU_TEMPERATURE_STOP_C} C)"
+                    )
             faults = kernel_faults(started)
             if faults:
                 raise RuntimeError("Host fault during camera capture: " + faults)
@@ -732,10 +754,14 @@ def main():
     mode.add_argument("--mock", action="store_true")
     mode.add_argument("--allow-cameras", action="store_true")
     parser.add_argument(
-        "--privilege", choices=("pkexec", "sudo-n"), default="pkexec"
+        "--privilege", choices=("pkexec", "sudo-n", "workbench"), default="pkexec"
     )
     parser.add_argument("--max-seconds", type=int, default=3600)
+    parser.add_argument("--motion-workbench", action="store_true",
+                        help="Use the motion workbench host monitor, not the capture stress-test temperature gate")
     args = parser.parse_args()
+    if args.motion_workbench and not (args.allow_cameras and args.privilege=="workbench"):
+        parser.error("--motion-workbench requires the physical workbench camera mode")
     if not 5 <= args.max_seconds <= 10800:
         parser.error("max-seconds must be in 5..10800")
     if args.socket.exists():
@@ -757,7 +783,7 @@ def main():
     server_thread.start()
     try:
         if not mock:
-            sources.thread(sources.monitor_host)
+            sources.thread(lambda: sources.monitor_host(motion_workbench=args.motion_workbench))
         sources.thread(sources.mock if mock else sources.native)
         deadline = time.monotonic() + args.max_seconds
         while (

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenArm · 双手柄监视器</title>
+<style>
+*{box-sizing:border-box}body{margin:0;color:#192b2b;background:repeating-linear-gradient(90deg,#eef0e8 0 1px,#f7f7ef 1px 40px);font:16px "Noto Sans CJK SC","Microsoft YaHei",sans-serif}
+main{max-width:980px;margin:auto;padding:clamp(14px,3vw,32px)}header,.row{display:flex;align-items:baseline;justify-content:space-between;gap:.7em;flex-wrap:wrap}
+small,.tag,dt{font:600 12px monospace;letter-spacing:.06em}h1{font:700 clamp(24px,4vw,38px) "Noto Serif CJK SC",serif;margin:.15em 0}
+.tag{padding:6px 10px;background:#223c3d;color:white}#state{border-left:5px solid #b45a33;padding:10px 14px;background:#fff8e7;margin:12px 0;font-weight:600;overflow-wrap:anywhere}
+#state[data-active=true]{border-color:#227452;background:#e4f2e7}.hands{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+article{background:#fffef7;border:1px solid #afb9ac;border-top:3px solid #487e7a;padding:12px 16px}article:last-child{border-top-color:#b27644}h2{margin:0;font-size:20px}
+dl{display:grid;grid-template-columns:repeat(3,1fr);margin:12px 0 0;gap:6px}dt{color:#516661}dd{margin:3px 0;font:600 clamp(18px,3vw,28px) monospace}
+#rec{margin-top:12px;padding:9px;border-block:1px solid #abb5a8}footer{margin-top:8px;font-size:13px;color:#49605a}
+@media(max-width:550px){.hands{grid-template-columns:1fr}main{padding:10px}.tag{letter-spacing:0}}
+.keys{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.key{--ink:#245a79;border-top:4px solid var(--ink);background:#fffef7;padding:10px;color:#243535}
+.key:nth-child(2){--ink:#227151}.key:nth-child(3){--ink:#245ba1}.key:nth-child(4){--ink:#a82d22}
+.key b{display:inline-grid;place-items:center;border-radius:50%;width:2em;height:2em;color:white;background:var(--ink);font:700 22px monospace}
+.key strong,.key span{display:block;margin-top:7px}.key span{font-size:12px;color:#4a5654}.key[data-down=true]{background:var(--ink);color:white}.key[data-down=true] span{color:white}
+details{margin:12px 0}summary{cursor:pointer;color:#425c59}.hint{font-size:14px}@media(max-width:620px){.keys{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style></head><body><main>
+<header><div><small>OPENARM V2 / HAND-DELTA</small><h1>双手柄监视器 · 按键</h1></div><span class="tag" id="mode">连接中</span></header>
+<div id="state" role="status">等待数据</div>
+<section class="keys" aria-label="实体手柄按键，只读">
+<div class="key" id="key-x"><b>X</b><strong>开始 / 成功结束录制</strong><span>左手 · 单按</span><span id="level-x">未知</span></div>
+<div class="key" id="key-y"><b>Y</b><strong>对齐手柄起点</strong><span>左手 · 先松开再轻按</span><span id="level-y">未知</span></div>
+<div class="key" id="key-a"><b>A</b><strong>请求启动双臂</strong><span>右手 · 长按 1.5 秒</span><span id="level-a">未知</span></div>
+<div class="key" id="key-b"><b>B</b><strong>停臂 / 中断录制</strong><span>右手 · 单按，活动条记失败</span><span id="level-b">未知</span></div>
+</section>
+<p class="hint">采集时，扳机用于初始对齐，之后控制夹爪。B 是软件停臂，不是硬件急停。</p>
+<div id="rec">录制状态未知</div><details><summary>查看左右手追踪与 XYZ 目标位移</summary><div class="hands"></div></details>
+<footer>位移单位 mm，相对本会话启动姿态的末端目标，不是真机反馈。面板只读，关闭网页不会停臂。</footer>
+</main><script>
+const $=id=>document.getElementById(id), sides=['left','right'];
+for(const s of sides){const a=document.createElement('article');a.innerHTML=`<div class="row"><h2>${s==='left'?'左手':'右手'}</h2><span id="${s}-flag"></span></div><dl>${['X','Y','Z'].map((k,i)=>`<div><dt>${k} / mm</dt><dd id="${s}-${i}">—</dd></div>`).join('')}</dl>`;document.querySelector('.hands').append(a)}
+const modes={demo:'按键说明 · 无设备',model:'Quest 输入 · 仅模型',capture:'采集会话 · 真机入口'};
+const hints={'waiting for first UDP packet':'等待 Transmitter 数据','active':'Y 已对齐，正在更新目标','tracking OK; tap Y to align':'双手追踪有效；轻按 Y 对齐','tracking OK; release Y first':'先松开 Y，再轻按对齐','input timeout':'输入过期，不显示旧位移','B: disarmed':'已按 B，未对齐','re-align with Y':'暂不输出目标；检查手柄追踪后重新对齐','pose jump: re-align':'手柄位姿跳变，需要重新对齐'};
+function render(data){
+ const h=data?.hand,c=data?.capture; $('mode').textContent=modes[data?.mode]||'未连接';
+ $('state').dataset.active=String(!!h?.active);
+ $('state').textContent=!data?'电脑页面连接中断，状态未知':data.mode==='demo'?'静态说明：不读取手柄，不播放动作。':!h?'未收到新状态，不显示旧数据':(hints[h.status]||h.status);
+ if(data?.mode==='capture' && h?.link) $('state').textContent+=' ｜ '+h.link;
+ if(c?.arm_fault){$('state').dataset.active='false';$('state').textContent=c.blocked;}
+ for(const k of 'xyab'){const down=h?.buttons?.down?.[k], edge=h?.buttons?.edges?.[k];
+ const recent=Number.isFinite(edge)&&h.buttons.stamp-edge<.45;
+ $('key-'+k).dataset.down=String(down===true);
+ $('level-'+k).textContent=data?.mode==='demo'?'按键图例':down===true?'按下中':down===false?(recent?'刚按过 · 已松开':'已松开'):'无新按键数据';}
+ for(const s of sides){const flag=h?.flags?.[s];$(s+'-flag').textContent=({0:'追踪有效',1:'追踪过期',2:'追踪无效'})[flag]||'追踪未知';
+ for(let i=0;i<3;i++){const v=h?.active?h.delta?.[s]?.[i]:null;$(s+'-'+i).textContent=Number.isFinite(v)?v.toFixed(1):'—'}}
+ $('rec').textContent=!data?'录制状态未知':data.mode==='demo'?'只读图例，不执行按键命令':data.mode==='model'?'模型试跑：Y 对齐、B 解除对齐；X / A 只显示，不录制、不启臂。':!c?'Recorder 状态未知':`录制：${c.phase}${c.episode==null?'':' #'+c.episode} ｜ ${c.ready?'可以开始录制':c.blocked||c.reason||''} ｜ 左臂 ${c.arms?.left||'未知'} / 右臂 ${c.arms?.right||'未知'}`;
+}
+async function poll(){try{const r=await fetch('/hand-status',{cache:'no-store',signal:AbortSignal.timeout(1200)});if(!r.ok)throw Error();render(await r.json())}catch{render(null)}finally{setTimeout(poll,100)}}poll();
+</script></body></html>

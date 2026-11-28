@@ -31,6 +31,35 @@ CLI 通过 `dora_capture_cli.py` 调用私有版本，只保留一次现场 `STA
 
 ## 操作边界
 
+### 四路实时预览
+
+以下命令从仓库根目录运行。不启动 Dora/机械臂、不记录训练数据，只打开实时窗口：
+
+```bash
+bash vr_teleoperation/local/run_four_camera_preview.sh
+```
+
+按系统提示授权相机辅助程序，不需要输入 START。
+左上全局、右上胸部、左下左腕、右下右腕；按 `1/2/3/4` 放大对应画面，
+`0` 返回四路，`Q` / `Esc` / 关闭窗口退出并释放相机。
+窗口显示源帧率、帧龄、灰度和高亮像素比例；图像不拉亮，不再次旋转。
+相机源仍为配置中的 30 fps，窗口默认 10 fps，预览率不是录制率。
+使用相同取流配置，包含临时 `ae_priority=0`，不关闭自动曝光；退出恢复原相机控制。
+
+默认独占打开相机，不能与另一套取流进程重复占用。
+如需在已有相机服务旁预览，可显式传 `--socket /absolute/camera.sock`，
+此时退出仅断开预览连接，不停止已有服务，也不消费 Recorder 的 raw drain。
+日志保存在已忽略的 `local/out/four-camera-preview-*`，默认不保存图像。
+
+离线验证入口（合成图像，不访问相机）：
+
+```bash
+vr_teleoperation/upstream/dora-openarm-data-collection/.venv/bin/python \
+  vr_teleoperation/local/four_camera/preview.py --mock --headless --max-seconds 6
+```
+
+### 录制模式
+
 - `--mode mock`：四路合成图像、合成关节，不打开设备。
 - `--mode camera-diagnostic --allow-cameras`：四路真实相机、合成关节；
   只用于链路/存储诊断，不加载机器人或 leader，不是训练示范。

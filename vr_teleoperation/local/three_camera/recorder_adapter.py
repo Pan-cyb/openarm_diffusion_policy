@@ -6,6 +6,7 @@ import copy
 import json
 import os
 import time
+from pathlib import Path
 
 from durable_io import atomic_write_bytes, mkdir_durable, sync_directory, sync_file, sync_tree, sync_filesystem
 from storage import check_storage
@@ -55,6 +56,16 @@ class OrderedInputs:
     def __getattr__(self, name):
         return getattr(self.raw, name)
 
+    def dataflow_descriptor(self):
+        # The upstream frequency walker expects intermediate tick sources as strings.
+        # Normalize only its metadata view; leave live queue sizes/policies intact.
+        descriptor = copy.deepcopy(self.raw.dataflow_descriptor())
+        for node in descriptor["nodes"]:
+            for key, edge in node.get("inputs", {}).items():
+                if isinstance(edge, dict) and "source" in edge:
+                    node["inputs"][key] = edge["source"]
+        return descriptor
+
     def finish(self, command, metadata, reason=None):
         import pyarrow as pa
         episode = self.active
@@ -72,7 +83,7 @@ class OrderedInputs:
 
     def __iter__(self):
         import pyarrow as pa
-        last_input = time.monotonic()
+        last_input = last_data = time.monotonic()
         while True:
             if self.pending:
                 event, expected, deadline = self.pending
@@ -117,6 +128,12 @@ class OrderedInputs:
             if event["type"] != "INPUT":
                 continue
             name, metadata = event["id"], event["metadata"]
+            if name == "idle_tick":
+                if self.active is not None and time.monotonic() - last_data >= self.timeout:
+                    yield from self.finish("fail", {}, "all inputs became silent")
+                    return
+                continue
+            last_data = last_input
             if name in ARM_INPUTS and metadata.get("mock_warmup") is True:
                 if not self.prime_required or metadata.get("mock") is not True:
                     raise ValueError("Unexpected diagnostic warmup sample")
@@ -252,6 +269,8 @@ def durable_dataset_writer(base):
                     "configured_source_nominal_not_bridge_timer_or_measured")
             mkdir_durable(directory / name)
             super().__init__(directory, name, metadata)
+            if ready := os.environ.get("CAPTURE_RECORDER_READY_FILE"):
+                Path(ready).touch(exist_ok=False)
 
         def finish_episode(self, episode):
             audit = self._base_directory / "camera_timing" / f"episode_{episode.number}.jsonl"
@@ -290,6 +309,8 @@ def main():
     try:
         upstream.main()
     finally:
+        if ready := os.environ.get("CAPTURE_RECORDER_READY_FILE"):
+            Path(ready).unlink(missing_ok=True)
         upstream.dora.Node = original
         upstream.EpisodeWriter = writer
         upstream.DatasetWriter = dataset_writer

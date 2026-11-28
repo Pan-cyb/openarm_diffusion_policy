@@ -13,6 +13,27 @@ import yaml
 
 
 class LaunchTests(unittest.TestCase):
+    @patch("launch.subprocess.run")
+    @patch("quest_wear.check_quest")
+    def test_usb_repair_only_on_permission_error_and_consent(self, check, run):
+        from quest_wear import QuestUsbPermissionError
+        with patch("builtins.input") as prompt:
+            launch.preflight_hand_delta_usb()
+            check.side_effect = RuntimeError("unauthorized")
+            with self.assertRaisesRegex(RuntimeError, "unauthorized"):
+                launch.preflight_hand_delta_usb()
+            prompt.assert_not_called()
+        check.side_effect = QuestUsbPermissionError("no permissions")
+        with patch("launch.sys.stdin.isatty", return_value=False), self.assertRaises(QuestUsbPermissionError):
+            launch.preflight_hand_delta_usb()
+        with patch("launch.sys.stdin.isatty", return_value=True):
+            with patch("builtins.input", return_value=""), self.assertRaisesRegex(RuntimeError, "取消"):
+                launch.preflight_hand_delta_usb()
+            run.assert_not_called()
+            with patch("builtins.input", return_value="y"):
+                launch.preflight_hand_delta_usb()
+            run.assert_called_once_with(["bash", str(launch.LOCAL / "setup_quest_usb.sh")], check=True)
+
     def test_familiar_shell_entry_dispatches_to_four_camera_launcher(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -49,6 +70,11 @@ class LaunchTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(json.loads(result.stdout), defaults)
             self.assertNotIn("--confirm-image-quality", defaults)
+            hand_script = local / "run_hand_delta.sh"
+            hand_script.write_bytes((launch.LOCAL / hand_script.name).read_bytes())
+            result = subprocess.run(["bash", str(hand_script), "capture"], env=env,
+                                    capture_output=True, text=True, timeout=5, check=True)
+            self.assertEqual(json.loads(result.stdout), [*defaults, "--leader", "hand-delta"])
 
     @patch("launch.sys.stdin.isatty", return_value=True)
     @patch("builtins.input", return_value="START")
@@ -113,6 +139,17 @@ class LaunchTests(unittest.TestCase):
             result = subprocess.run([str(launch.DORA), "validate", str(path)],
                                     capture_output=True, text=True, timeout=15)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            robot = Path(directory) / nodes["robot"]["module"]
+            robot.write_bytes(launch.gravity_module(robot.read_bytes(), launch.DEFAULT_PERCENT,
+                                                    Path(directory), production=True))
+            arms = yaml.safe_load(robot.read_text())["nodes"][:2]
+            for arm in arms:
+                self.assertIn("--gravity-percent 100", arm["args"])
+                self.assertIn("--production-gravity", arm["args"])
+                self.assertEqual(arm["inputs"]["gravity_watchdog"], "dora/timer/millis/40")
+            result = subprocess.run([str(launch.DORA), "validate", str(path)],
+                                    capture_output=True, text=True, timeout=15)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_diagnostic_metadata_cannot_masquerade_as_demonstration(self):
         config = launch.service.load_config(launch.HERE / "config.json")
@@ -122,6 +159,35 @@ class LaunchTests(unittest.TestCase):
         self.assertIn("NOT A DEMONSTRATION", metadata["tasks"][0]["prompt"])
         self.assertEqual(set(metadata["equipment"]["perceptions"]["cameras"]), set(launch.NAMES))
         self.assertFalse(metadata["capture_contract"]["image_quality_accepted"])
+
+    def test_hand_delta_recorder_and_robot_use_same_targets(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            graph = launch.make_graph(root/"sock", root/"meta", root, "offline",
+                                      real_robot=True, leader="hand-delta")
+            nodes = {n["id"]: n for n in graph["nodes"]}
+            self.assertNotIn("webxr", str(nodes["leader"]))
+            self.assertIn("--start-profile " + launch.hand_start.PROFILE, nodes["leader"]["args"])
+            for s in ("left", "right"):
+                self.assertEqual(nodes["robot"]["inputs"][f"position_{s}"],
+                                 nodes["recorder"]["inputs"][f"arm_{s}_action"]["source"])
+            self.assertEqual(nodes["ui"]["inputs"]["hand_operator"], "leader/operator")
+            config = root/(launch.hand_start.PROFILE + ".yaml")
+            launch.write_robot_module(root, "hand-delta", None)
+            self.assertEqual(yaml.safe_load(config.read_text()), launch.hand_start.driver_config())
+            raw = (root/"robot_real_pedestal.yaml").read_bytes()
+            for arm in yaml.safe_load(raw)["nodes"][:2]:
+                self.assertIn(f"--config {config}", arm["args"])
+                self.assertIn("--gravity-percent 100", arm["args"])
+                self.assertIn("--production-gravity", arm["args"])
+                self.assertIn("gravity_watchdog", arm["inputs"])
+            self.assertEqual(launch.gravity_description()["ramp_seconds"], 0.)
+            self.assertEqual(launch.gravity_description(25, diagnostic=True)["ramp_seconds"], 10.)
+            path = root/"dataflow.yaml"
+            path.write_text(yaml.safe_dump(graph))
+            result = subprocess.run([str(launch.DORA), "validate", str(path)],
+                                    capture_output=True, text=True, timeout=15)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_sustained_diagnostic_count_is_propagated(self):
         graph = launch.make_graph(Path("/tmp/no.sock"), Path("/tmp/meta.yaml"),

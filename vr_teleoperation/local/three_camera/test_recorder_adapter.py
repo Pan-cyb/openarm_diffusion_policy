@@ -2,6 +2,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pyarrow as pa
@@ -32,6 +33,24 @@ class Raw:
 
 
 class RecorderBarrierTests(unittest.TestCase):
+    def test_queued_tick_in_real_leader_is_readable_by_upstream_recorder(self):
+        from dora_openarm_dataset_recorder.main import _collect_dynamic_metadata
+        nodes = [{"id": "leader", "inputs": {"tick": {"source": "clock/tick", "queue_size": 1}}},
+                 {"id": "clock", "inputs": {"tick": "dora/timer/millis/4"}}]
+        raw = SimpleNamespace(dataflow_descriptor=lambda: {"nodes": nodes},
+                              node_config=lambda: {"inputs": {"arm_left_action": "leader/position_left"}})
+        metadata = {}
+        _collect_dynamic_metadata(metadata, SimpleNamespace(operation_type="teleop"), OrderedInputs(raw))
+        self.assertEqual(metadata["frequencies"]["action"]["arms"]["left"], 250.)
+        self.assertEqual(nodes[0]["inputs"]["tick"]["queue_size"], 1)
+
+    def test_idle_tick_does_not_reach_recorder_or_keep_silent_episode_alive(self):
+        tick = {"type": "INPUT", "id": "idle_tick", "metadata": {}}
+        raw = Raw([tick, command("start"), tick])
+        with patch("recorder_adapter.time.monotonic", side_effect=[0., 3., 3.1, 6., 6.]):
+            stream = list(OrderedInputs(raw))
+        self.assertEqual([e["value"][0].as_py() for e in stream], ["start", "fail"])
+
     def test_priming_requires_all_inputs_and_never_reaches_writer(self):
         warmup = [{"type": "INPUT", "id": name, "value": pa.array([0.0] * 8),
                    "metadata": {"timestamp": 50, "observation_timestamp": 50,
